@@ -24,7 +24,8 @@
     "build:prod": "cross-env NODE_ENV=production npm run build",
     "prepare": "husky",
     "upload:cos": "node scripts/upload-to-cos.js",
-    "icons": "node scripts/generate-icons.mjs"
+    "icons": "node scripts/generate-icons.mjs",
+    "sync-plugins": "node scripts/sync-plugins-from-remote.mjs"
   },
   "dependencies": {
     "@electron-toolkit/preload": "^3.0.2",

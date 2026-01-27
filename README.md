@@ -80,6 +80,16 @@ pnpm build:linux        # Linux
 
 ## 插件开发
 
+### 官方插件仓库
+
+官方插件已迁移到独立仓库进行管理：
+
+- **插件仓库**: [unihub-plugins](https://github.com/t8y2/unihub-plugins)
+- **插件市场**: 自动同步到本仓库的 `marketplace/plugins.json`
+- **架构说明**: 查看 [PLUGIN_REPOSITORY.md](./PLUGIN_REPOSITORY.md)
+
+### 快速开发
+
 使用官方 CLI 工具快速开发插件：
 
 ```bash
@@ -97,7 +107,7 @@ uhp dev
 uhp package
 ```
 
-生成的 `plugin.zip` 可直接拖拽到 UniHub 安装，或提交 PR 到 `marketplace/plugins.json` 发布到插件市场。
+生成的 `plugin.zip` 可直接拖拽到 UniHub 安装，或提交 PR 到 [插件仓库](https://github.com/t8y2/unihub-plugins) 发布到插件市场。
 
 查看完整文档：[Plugin CLI](tools/plugin-cli/README.md) | 示例插件：[examples/](examples/)
 

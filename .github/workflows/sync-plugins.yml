@@ -1,9 +1,15 @@
-name: Sync Plugins to Gist
+name: Sync Plugins from Remote
 
 on:
+  # 每天自动同步一次
+  schedule:
+    - cron: '0 2 * * *' # 每天凌晨 2 点 (UTC)
+
+  # 手动触发
+  workflow_dispatch:
+
+  # 当 marketplace/plugins.json 被推送时也触发（用于手动更新）
   push:
-    branches:
-      - main
     paths:
       - 'marketplace/plugins.json'
 
@@ -12,18 +18,33 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+      - name: Checkout main repository
         uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '18'
 
-      - name: Sync to Gist
-        # 只在主仓库运行，跳过 fork 的 PR
-        if: github.repository == 't8y2/unihub' && github.event_name == 'push'
-        env:
-          GIST_ID: ${{ secrets.GIST_ID }}
-          GIST_TOKEN: ${{ secrets.GIST_TOKEN }}
-        run: node scripts/sync-plugins-to-gist.js
+      - name: Sync plugins.json from remote
+        run: node scripts/sync-plugins-from-remote.mjs
+
+      - name: Check for changes
+        id: check_changes
+        run: |
+          if git diff --quiet marketplace/plugins.json; then
+            echo "changed=false" >> $GITHUB_OUTPUT
+          else
+            echo "changed=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Commit and push if changed
+        if: steps.check_changes.outputs.changed == 'true'
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add marketplace/plugins.json
+          git commit -m "chore: sync plugins from unihub-plugins repository"
+          git push
