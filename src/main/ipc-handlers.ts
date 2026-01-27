@@ -35,6 +35,7 @@ export function registerDevModeHandlers(): void {
 
   // 获取所有开发模式插件
   ipcMain.handle('plugin:dev:list', () => {
-    return { success: true, data: pluginDevServer.getAllDevPlugins() }
+    const devPlugins = pluginDevServer.getAllDevPlugins()
+    return { success: true, data: devPlugins }
   })
 }
