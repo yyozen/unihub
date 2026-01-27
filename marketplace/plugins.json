@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2025-01-27T14:30:00Z",
+  "lastUpdated": "2025-01-27T15:00:00Z",
   "plugins": [
     {
       "id": "com.unihub.color-picker",
@@ -224,7 +224,7 @@
     {
       "id": "com.unihub.clipboard-history",
       "name": "剪贴板历史",
-      "version": "1.0.1",
+      "version": "1.0.2",
       "description": "剪贴板历史管理工具 - 记录、搜索和管理剪贴板历史",
       "author": {
         "name": "UniHub Team",
@@ -244,7 +244,7 @@
       "downloads": 0,
       "rating": 5.0,
       "createdAt": "2025-01-06T12:00:00Z",
-      "updatedAt": "2025-01-25T12:00:00Z"
+      "updatedAt": "2025-01-27T15:00:00Z"
     },
     {
       "id": "com.unihub.excalidraw",
