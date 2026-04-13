@@ -13,3 +13,4 @@ out
 stats-api/.vercel
 .vscode
 /.idea/
+.github/c*
