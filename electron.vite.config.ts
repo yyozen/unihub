@@ -51,7 +51,8 @@ export default defineConfig({
     build: {
       rollupOptions: {
         input: {
-          index: resolve(__dirname, 'src/renderer/index.html')
+          index: resolve(__dirname, 'src/renderer/index.html'),
+          search: resolve(__dirname, 'src/renderer/search.html')
         },
         // Tree shaking 优化
         treeshake: {

@@ -69,13 +69,11 @@ export class SearchWindowManager {
       }
     })
 
-    // 加载搜索页面
+    // 加载搜索页面（使用独立的 search.html 入口，避免加载主窗口全量 bundle）
     if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
-      this.searchWindow.loadURL(`${process.env['ELECTRON_RENDERER_URL']}#/search`)
+      this.searchWindow.loadURL(`${process.env['ELECTRON_RENDERER_URL']}/search.html`)
     } else {
-      this.searchWindow.loadFile(join(__dirname, '../renderer/index.html'), {
-        hash: '/search'
-      })
+      this.searchWindow.loadFile(join(__dirname, '../renderer/search.html'))
     }
 
     this.searchWindow.on('ready-to-show', () => {

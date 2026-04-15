@@ -1,22 +1,34 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, computed, watch, provide, nextTick } from 'vue'
+import {
+  ref,
+  onMounted,
+  onUnmounted,
+  computed,
+  watch,
+  provide,
+  nextTick,
+  defineAsyncComponent
+} from 'vue'
 import { pluginRegistry, initPlugins } from './plugins'
 import { pluginInstaller } from './plugins/marketplace/installer'
 import { PluginIcon } from './components/ui/plugin-icon'
 import HomePage from './components/HomePage.vue'
-import PluginManagementPage from './components/PluginManagementPage.vue'
-import SettingsPage from './components/SettingsPage.vue'
-import FavoritesPage from './components/FavoritesPage.vue'
-import RecentsPage from './components/RecentsPage.vue'
-import WebNavigator from './components/WebNavigator.vue'
 import GlobalSearch from './components/GlobalSearch.vue'
-import UpdateNotification from './components/UpdateNotification.vue'
 import { Toaster } from './components/ui/sonner'
 import { Kbd } from './components/ui/kbd'
 import { STORAGE_KEYS, CATEGORY_NAMES, DEFAULT_CATEGORIES } from '@/constants'
 import { usePluginData } from './composables/usePluginData'
 import { useKeyboard } from './composables/useKeyboard'
 import type { Tab, TabType } from '@/types/common'
+
+const PluginManagementPage = defineAsyncComponent(
+  () => import('./components/PluginManagementPage.vue')
+)
+const SettingsPage = defineAsyncComponent(() => import('./components/SettingsPage.vue'))
+const FavoritesPage = defineAsyncComponent(() => import('./components/FavoritesPage.vue'))
+const RecentsPage = defineAsyncComponent(() => import('./components/RecentsPage.vue'))
+const WebNavigator = defineAsyncComponent(() => import('./components/WebNavigator.vue'))
+const UpdateNotification = defineAsyncComponent(() => import('./components/UpdateNotification.vue'))
 
 // UI 状态
 const isDark = ref(false)
@@ -39,7 +51,7 @@ const formatShortcut = (shortcut: string): string => {
 const formattedShortcut = computed(() => formatShortcut(globalSearchShortcut.value))
 
 // 更新通知组件引用
-const updateNotificationRef = ref<InstanceType<typeof UpdateNotification> | null>(null)
+const updateNotificationRef = ref<{ checkForUpdates: () => Promise<void> } | null>(null)
 
 // 防止快速连续按 cmd+w 导致的竞态条件（组件级别的锁）
 let isClosingTab = false
