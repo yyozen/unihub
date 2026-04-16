@@ -10,6 +10,8 @@ on:
 
   # 当 marketplace/plugins.json 被推送时也触发（用于手动更新）
   push:
+    branches:
+      - main
     paths:
       - 'marketplace/plugins.json'
 
@@ -21,6 +23,7 @@ jobs:
       - name: Checkout main repository
         uses: actions/checkout@v4
         with:
+          ref: main
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Node.js
