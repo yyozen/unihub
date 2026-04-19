@@ -20,6 +20,7 @@ export class WebContentsViewManager {
   private lastBounds = new Map<string, { x: number; y: number; width: number; height: number }>() // 缓存最后的 bounds，避免重复设置
   private sidebarCollapsed = false // 侧边栏是否收起
   private reloadTimers = new Map<string, ReturnType<typeof setTimeout>>() // autoReload 重试计时器
+  private currentTheme: 'light' | 'dark' = 'light' // 缓存当前主题，避免每次跨 webContents 查询
 
   /**
    * 设置主窗口
@@ -27,8 +28,9 @@ export class WebContentsViewManager {
   setMainWindow(window: BrowserWindow): void {
     this.mainWindow = window
 
-    // 监听主题变化事件
+    // 监听主题变化事件，同时更新缓存
     ipcMain.on('theme-changed', (_event, theme: 'light' | 'dark') => {
+      this.currentTheme = theme
       this.broadcastThemeChange(theme)
     })
   }
@@ -109,19 +111,8 @@ export class WebContentsViewManager {
         logger.error({ err }, '注入插件 ID 失败')
       })
 
-      // 发送当前主题到新创建的插件
-      if (this.mainWindow && !this.mainWindow.isDestroyed()) {
-        this.mainWindow.webContents
-          .executeJavaScript('document.documentElement.classList.contains("dark")')
-          .then((isDark) => {
-            const theme = isDark ? 'dark' : 'light'
-            view.webContents.send('theme-changed', theme)
-            logger.info({ pluginId, theme }, '已发送初始主题到新插件')
-          })
-          .catch((err) => {
-            logger.error({ err }, '获取主窗口主题失败')
-          })
-      }
+      // 使用缓存的主题直接发送，避免跨 webContents 查询
+      view.webContents.send('theme-changed', this.currentTheme)
     })
 
     // 开发模式下打开 DevTools（已禁用）

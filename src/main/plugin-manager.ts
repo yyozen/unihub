@@ -331,9 +331,13 @@ export class PluginManager {
     })
   }
 
-  async loadPlugin(
-    pluginId: string
-  ): Promise<{ success: boolean; htmlPath?: string; devUrl?: string; message?: string }> {
+  async loadPlugin(pluginId: string): Promise<{
+    success: boolean
+    htmlPath?: string
+    devUrl?: string
+    entry?: string
+    message?: string
+  }> {
     try {
       // 检查是否为开发模式
       if (pluginDevServer.isDevMode(pluginId)) {
@@ -367,7 +371,7 @@ export class PluginManager {
         throw new Error('插件入口文件不存在')
       }
 
-      return { success: true, htmlPath }
+      return { success: true, htmlPath, entry: plugin.metadata.entry }
     } catch (error) {
       return { success: false, message: (error as Error).message }
     }

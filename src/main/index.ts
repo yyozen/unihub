@@ -9,7 +9,7 @@ import {
   Tray,
   nativeImage
 } from 'electron'
-import { join } from 'path'
+import { join, extname } from 'path'
 import { existsSync } from 'fs'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
@@ -320,8 +320,28 @@ app.whenReady().then(async () => {
 
   electronApp.setAppUserModelId('com.unihub.app')
 
+  // MIME 类型映射（避免每次查表）
+  const mimeTypes: Record<string, string> = {
+    '.html': 'text/html',
+    '.js': 'application/javascript',
+    '.mjs': 'application/javascript',
+    '.css': 'text/css',
+    '.json': 'application/json',
+    '.png': 'image/png',
+    '.jpg': 'image/jpeg',
+    '.jpeg': 'image/jpeg',
+    '.gif': 'image/gif',
+    '.svg': 'image/svg+xml',
+    '.ico': 'image/x-icon',
+    '.woff': 'font/woff',
+    '.woff2': 'font/woff2',
+    '.ttf': 'font/ttf',
+    '.eot': 'application/vnd.ms-fontobject',
+    '.wasm': 'application/wasm'
+  }
+
   // 使用新的 protocol.handle API 注册自定义协议
-  protocol.handle('plugin', (request) => {
+  protocol.handle('plugin', async (request) => {
     try {
       let url = request.url.substring('plugin://'.length)
       const queryIndex = url.indexOf('?')
@@ -339,8 +359,21 @@ app.whenReady().then(async () => {
         return new Response('File not found', { status: 404 })
       }
 
-      // 使用 net.fetch 加载本地文件
-      return net.fetch(pathToFileURL(fullPath).href)
+      // 使用 net.fetch 加载本地文件，然后注入缓存头
+      const response = await net.fetch(pathToFileURL(fullPath).href)
+      const ext = extname(fullPath).toLowerCase()
+      const contentType = mimeTypes[ext] || 'application/octet-stream'
+
+      // HTML 不缓存（可能随插件更新变化），静态资源长期缓存
+      const cacheControl = ext === '.html' ? 'no-cache' : 'public, max-age=31536000, immutable'
+
+      return new Response(response.body, {
+        status: response.status,
+        headers: {
+          'Content-Type': contentType,
+          'Cache-Control': cacheControl
+        }
+      })
     } catch (error) {
       logger.error({ err: error }, '加载插件资源失败')
       return new Response('Internal error', { status: 500 })
@@ -500,38 +533,53 @@ function setupIpcHandlers(): void {
     return result
   })
 
+  // 去重锁：避免同一插件并发 open 导致竞态
+  const openingPlugins = new Map<string, Promise<{ success: boolean; message?: string }>>()
+
   ipcMain.handle('plugin:open', async (_, pluginId: string) => {
-    const result = await pluginManager.loadPlugin(pluginId)
-    if (!result.success) {
-      return result
+    // 已有视图直接显示（最快路径）
+    const existingView = webContentsViewManager.getPluginView(pluginId)
+    if (existingView) {
+      webContentsViewManager.showPluginView(pluginId)
+      return { success: true }
     }
 
-    let pluginUrl = ''
-    if (result.devUrl) {
-      // dev 模式：直接使用 devUrl，不需要检查安装状态
-      pluginUrl = result.devUrl
-    } else {
-      const plugins = await pluginManager.listPlugins()
-      const plugin = plugins.find((p) => p.id === pluginId)
-      if (!plugin) {
-        return { success: false, message: '插件未找到' }
+    // 去重：并发调用合并为一个
+    if (openingPlugins.has(pluginId)) {
+      return openingPlugins.get(pluginId)!
+    }
+
+    const promise = (async () => {
+      const result = await pluginManager.loadPlugin(pluginId)
+      if (!result.success) {
+        return result
       }
-      if (result.htmlPath) {
-        pluginUrl = `plugin://${pluginId}/dist/index.html`
+
+      let pluginUrl = ''
+      if (result.devUrl) {
+        pluginUrl = result.devUrl
+      } else if (result.htmlPath) {
+        // loadPlugin 已验证插件存在，直接构建 URL，无需再次 listPlugins
+        pluginUrl = `plugin://${pluginId}/${result.entry || 'dist/index.html'}`
       } else {
         return { success: false, message: '插件 URL 不正确' }
       }
+
+      // 再次检查（去重窗口内可能已创建）
+      if (!webContentsViewManager.getPluginView(pluginId)) {
+        webContentsViewManager.createPluginView(pluginId, pluginUrl)
+      }
+
+      webContentsViewManager.showPluginView(pluginId)
+      return { success: true }
+    })()
+
+    openingPlugins.set(pluginId, promise)
+    try {
+      return await promise
+    } finally {
+      openingPlugins.delete(pluginId)
     }
-
-    // 检查视图是否已存在，不存在才创建
-    const existingView = webContentsViewManager.getPluginView(pluginId)
-    if (!existingView) {
-      webContentsViewManager.createPluginView(pluginId, pluginUrl)
-    }
-
-    webContentsViewManager.showPluginView(pluginId)
-
-    return { success: true }
   })
 
   ipcMain.handle('plugin:close', async (_, pluginId: string) => {
