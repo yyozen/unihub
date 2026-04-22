@@ -614,7 +614,7 @@
     },
     {
       "id": "com.unihub.todolist",
-      "name": "待办��单",
+      "name": "待办清单",
       "version": "1.0.0",
       "description": "优雅的待办事项管理工具 - 支持分类、优先级、提醒和统计",
       "author": {
